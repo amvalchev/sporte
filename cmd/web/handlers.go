@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -38,7 +37,6 @@ func sportEventView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Display a specific sport event with ID %d...", id)
 }
 
 func sportEventCreate(w http.ResponseWriter, r *http.Request) {
