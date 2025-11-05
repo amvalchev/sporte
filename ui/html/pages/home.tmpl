@@ -1,28 +1,53 @@
 {{define "title"}}Home{{end}}
 
 {{define "main"}}
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-3xl font-bold text-slate-800">Latest Sport Events</h2>
+    <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold text-slate-800 text-center mb-8">Latest Sport Events</h2>
+
+        {{if .HomeViewEvents}}
+            <!-- This container will hold our list of events -->
+            <div class="bg-white rounded-xl shadow-lg p-4 space-y-2">
+
+                <!-- We loop over the HomeViewEvents slice -->
+                {{range .HomeViewEvents}}
+    <!-- Each event is a clickable link. The 'group' class is for advanced hovers if we want them later. -->
+    <a href="{{printf "/event/view/%d" .EventID}}" class="block p-6 rounded-lg hover:bg-slate-50 transition-colors duration-200">
+
+        <!-- Main content container for this event -->
+        <div>
+
+            <!-- Top Line: Team matchup and score -->
+            <!-- This is the primary information, so we use larger, bolder text. -->
+            <div class="flex justify-between items-center text-xl font-bold text-slate-800">
+                <!-- We use flex-grow to allow team names to take up available space -->
+                <span class="truncate">{{.Team1Name}}</span>
+                <div class="flex items-center flex-shrink-0 px-4">
+                    <span class="text-blue-600 font-black text-2xl">{{.Team1Score}}</span>
+                    <span class="text-slate-400 font-light mx-2">:</span>
+                    <span class="text-blue-600 font-black text-2xl">{{.Team2Score}}</span>
+                </div>
+                <span class="truncate text-right">{{.Team2Name}}</span>
+            </div>
+
+            <!-- Bottom Line: Date, Venue, and Sport -->
+            <!-- This is the secondary information. It's smaller and lighter ('subtle'). -->
+            <div class="text-sm text-slate-500 mt-2 text-center">
+                <span class="font-semibold">{{.EventDateTime.Format "Mon, 02 Jan 2006"}}</span>
+                <span class="mx-2 text-slate-300">&bull;</span> <!-- A dot separator is visually cleaner -->
+                <span>{{.VenueName}}</span>
+                <span class="mx-2 text-slate-300">&bull;</span>
+                <span class="font-semibold ">{{.SportName}}</span>
+            </div>
+
+        </div>
+    </a>
+{{end}}
+            </div>
+        {{else}}
+            <!-- This is shown if there are no events -->
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center">
+                <p class="text-slate-600">There's nothing to see here yet!</p>
+            </div>
+        {{end}}
     </div>
-
-    {{if .Events}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {{range .Events}}
-                <!-- Each event is a clickable link to its detail page -->
-                <a href="{{printf "/event/view/%d" .EventID}}" class="block bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200">
-                    <h3 class="text-xl font-bold text-blue-600 mb-2">{{.EventName}}</h3>
-                    <p class="text-slate-600 mb-4">{{.Description}}</p>
-                    <div class="text-sm text-slate-500">
-                        <strong>Date:</strong> {{.EventDateTime.Format "02 Jan 2006"}}
-                    </div>
-                </a>
-            {{end}} <!-- This closes the 'range' block -->
-        </div>
-    {{else}}
-        <!-- This is shown if there are no events -->
-        <div class="bg-white p-8 rounded-xl shadow-lg">
-            <p class="text-slate-600">There's nothing to see here yet!</p>
-        </div>
-    {{end}} <!-- This closes the 'if' block -->
-
-{{end}} <!-- THIS IS THE CRUCIAL MISSING 'end' THAT CLOSES THE 'define "main"' BLOCK -->
+{{end}}

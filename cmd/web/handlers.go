@@ -13,8 +13,12 @@ import (
 )
 
 type templateData struct {
-	Event  models.SportEvent
-	Events []models.SportEvent
+	HomeViewEvents []models.EventHomeView
+	Event          models.SportEvent
+	Events         []models.SportEvent
+	Sport          models.Sport
+	Venue          models.Venue
+	Teams          []models.TeamInEvent
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +44,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := templateData{
-		Events: events,
+		HomeViewEvents: events,
 	}
 
 	err = ts.ExecuteTemplate(w, "base", data)
@@ -57,28 +61,23 @@ func (app *application) sportEventView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := app.sportEvents.Get(id)
+	// Call the new Get() method, which returns three values.
+	event, sport, venue, teams, err := app.sportEvents.Get(id)
 	if err != nil {
-		// 3. Handle the possible errors. If the model returns ErrNoRecord,
-		// it means the event doesn't exist, so we send a 404 Not Found.
 		if errors.Is(err, models.ErrNoRecord) {
 			http.NotFound(w, r)
 		} else {
-			// For any other error, it's a server problem.
 			log.Print(err.Error())
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		return
 	}
 
-	// 4. Define the list of files needed for this page.
 	files := []string{
 		"./ui/html/base.tmpl",
 		"./ui/html/partials/nav.tmpl",
-		"./ui/html/pages/view.tmpl", // <-- The new template for this page
+		"./ui/html/pages/view.tmpl",
 	}
-
-	// 5. Parse the template files.
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
 		log.Print(err.Error())
@@ -86,18 +85,19 @@ func (app *application) sportEventView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 6. Create our templateData, putting the fetched event into the 'Event' field.
+	// Populate the new fields in our templateData struct.
 	data := templateData{
 		Event: event,
+		Sport: sport,
+		Venue: venue,
+		Teams: teams,
 	}
 
-	// 7. Execute the template, passing in the data.
 	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
 		log.Print(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
-
 }
 
 func (app *application) sportEventCreate(w http.ResponseWriter, r *http.Request) {

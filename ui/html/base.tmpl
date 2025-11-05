@@ -4,30 +4,38 @@
     <head>
         <meta charset='utf-8'>
         <title>{{template "title" .}} - Sporte</title>
-        <!-- Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-slate-100 text-slate-800 font-sans">
 
-        <!-- Header -->
-        <header class="bg-white shadow-md">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <!-- Site Title -->
-                <h1 class="text-2xl font-bold text-blue-600">
-                    <a href='/' class="hover:text-blue-800">Sporte</a>
-                </h1>
 
-                <!-- Navigation -->
-                {{template "nav" .}}
-            </div>
-        </header>
+        <div class="max-w-4xl mx-auto my-12">
 
-        <!-- Main Content -->
-        <main class="container mx-auto px-6 py-8">
-            {{template "main" .}}
-        </main>
 
-        <!-- Footer -->
+            <header class="bg-white p-6 rounded-xl shadow-lg flex items-center mb-8">
+
+    <!-- Site Title -->
+    <h1 class="text-3xl font-bold text-blue-600 flex-shrink-0">
+        <a href='/' class="hover:text-blue-800">Sporte</a>
+    </h1>
+
+    <!-- The navigation template will now fill the remaining space -->
+    {{template "nav" .}}
+
+</header>
+
+            <!--
+                The main content block.
+                We no longer need 'container' or 'mx-auto' classes here
+                because the parent div is already handling the centering.
+            -->
+            <main>
+                {{template "main" .}}
+            </main>
+
+        </div> <!-- This closes our new main page container -->
+
+        <!-- The footer can remain outside the main container for a different look -->
         <footer class="text-center py-4 mt-8 text-sm text-slate-500">
             Powered by <a href='https://golang.org/' class="underline hover:text-slate-700">Go</a>
         </footer>

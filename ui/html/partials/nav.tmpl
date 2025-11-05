@@ -1,10 +1,18 @@
 {{define "nav"}}
-<nav>
-    <ul class="flex items-center space-x-6">
-        <li>
-            <a href='/' class="text-slate-600 hover:text-blue-600 font-medium">Home</a>
+<nav class="w-full flex-grow">
+    <!-- The list is also a flex container that vertically centers its items -->
+    <ul class="flex items-center">
+        <!-- The "Home" link gets a left margin to create space from the "Sporte" title -->
+        <li class="ml-10">
+            <a href='/' class="text-lg text-slate-600 hover:text-blue-600 font-medium pb-1 border-b-2 border-transparent hover:border-blue-600 transition-colors">Home</a>
         </li>
-        <li>
+
+        <!--
+            THIS IS THE KEY:
+            - 'ml-auto' (margin-left: auto) pushes this list item to the far right of the nav bar.
+        -->
+        <li class="ml-auto">
+            <!-- Let's style this as a button again, as it's a primary action -->
             <a href='/event/create' class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
                 New Event
             </a>

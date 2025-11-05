@@ -6,6 +6,55 @@ import (
 	"time"
 )
 
+type EventHomeView struct {
+	EventID       int
+	EventDateTime time.Time
+	VenueName     string
+	SportName     string
+	Team1Name     string
+	Team1Score    int
+	Team2Name     string
+	Team2Score    int
+}
+
+type Team struct {
+	ID          int
+	Name        string
+	Coach       string
+	YearFounded int
+}
+
+// Represents a row from the 'Players' table
+type Player struct {
+	ID        int
+	FirstName string
+	LastName  string
+	Position  string
+}
+
+// This is a special composite struct. It doesn't represent a single table.
+// It holds all the information for one team's participation in an event.
+type TeamInEvent struct {
+	Team    Team
+	Score   int
+	Players []Player
+}
+
+type Sport struct {
+	ID          int
+	Name        string
+	Description string
+}
+
+type Venue struct {
+	ID       int
+	Name     string
+	Address  string
+	City     string
+	Country  string
+	Capacity int
+}
+
 type SportEvent struct {
 	EventID       int
 	EventName     string
@@ -36,64 +85,168 @@ func (m *SportEventModel) Insert(eventname string, evendatetime time.Time, descr
 	return int(id), nil
 }
 
-func (m *SportEventModel) Get(id int) (SportEvent, error) {
-	stmt := `SELECT event_id, event_name, event_date_time, description, _sport_id, _venue_id
-        	 FROM events WHERE event_id = ?`
-	row := m.DB.QueryRow(stmt, id)
+func (m *SportEventModel) Get(id int) (SportEvent, Sport, Venue, []TeamInEvent, error) {
+	// === QUERY 1: Get Event, Sport, and Venue Details ===
+	// This part is the same as before.
+	stmt := `SELECT e.event_id, e.event_name, e.event_date_time, e.description,
+                s.sport_id, s.sport_name, s.description,
+                v.venue_id, v.venue_name, v.address, v.city, v.country, v.capacity
+             FROM events AS e
+             INNER JOIN sports AS s ON e._sport_id = s.sport_id
+             INNER JOIN venues AS v ON e._venue_id = v.venue_id
+             WHERE e.event_id = ?`
 
+	row := m.DB.QueryRow(stmt, id)
 	var e SportEvent
+	var s Sport
+	var v Venue
 	var dateTimeString string
-	err := row.Scan(&e.EventID, &e.EventName, &dateTimeString, &e.Description, &e.SportID, &e.VenueID)
+	err := row.Scan(&e.EventID, &e.EventName, &dateTimeString, &e.Description,
+		&s.ID, &s.Name, &s.Description,
+		&v.ID, &v.Name, &v.Address, &v.City, &v.Country, &v.Capacity)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return SportEvent{}, ErrNoRecord
+			return SportEvent{}, Sport{}, Venue{}, nil, ErrNoRecord
 		} else {
-			return SportEvent{}, err
+			return SportEvent{}, Sport{}, Venue{}, nil, err
 		}
 	}
-
-	// Use our robust helper function to parse the date.
 	parsedTime, err := parseFlexibleTime(dateTimeString)
 	if err != nil {
-		return SportEvent{}, err
+		return SportEvent{}, Sport{}, Venue{}, nil, err
 	}
 	e.EventDateTime = parsedTime
 
-	return e, nil
+	// === QUERY 2: Get all Teams and their Scores for this Event ===
+	stmt = `SELECT t.team_id, t.team_name, t.coach, t.year_founded, et.score
+            FROM teams AS t
+            INNER JOIN event_teams AS et ON t.team_id = et._team_id
+            WHERE et._event_id = ?`
+
+	rows, err := m.DB.Query(stmt, id)
+	if err != nil {
+		return SportEvent{}, Sport{}, Venue{}, nil, err
+	}
+	defer rows.Close()
+
+	var teamsInEvent []TeamInEvent
+	for rows.Next() {
+		var tie TeamInEvent // A single "Team In Event"
+		err := rows.Scan(&tie.Team.ID, &tie.Team.Name, &tie.Team.Coach, &tie.Team.YearFounded, &tie.Score)
+		if err != nil {
+			return SportEvent{}, Sport{}, Venue{}, nil, err
+		}
+		teamsInEvent = append(teamsInEvent, tie)
+	}
+	if err = rows.Err(); err != nil {
+		return SportEvent{}, Sport{}, Venue{}, nil, err
+	}
+
+	// === QUERY 3: Get Players for EACH Team ===
+	// Now we loop through the teams we just found and fetch their players.
+	for i := range teamsInEvent {
+		stmt = `SELECT player_id, first_name, last_name, position FROM players WHERE _team_id = ?`
+		playerRows, err := m.DB.Query(stmt, teamsInEvent[i].Team.ID)
+		if err != nil {
+			return SportEvent{}, Sport{}, Venue{}, nil, err
+		}
+
+		var players []Player
+		for playerRows.Next() {
+			var p Player
+			err := playerRows.Scan(&p.ID, &p.FirstName, &p.LastName, &p.Position)
+			if err != nil {
+				playerRows.Close()
+				return SportEvent{}, Sport{}, Venue{}, nil, err
+			}
+			players = append(players, p)
+		}
+		playerRows.Close() // Close each player result set before the next loop iteration.
+
+		// Add the slice of players to the correct team.
+		teamsInEvent[i].Players = players
+	}
+
+	// Finally, return all the rich data we've assembled.
+	return e, s, v, teamsInEvent, nil
 }
 
-func (m *SportEventModel) Latest() ([]SportEvent, error) {
-	stmt := `SELECT event_id, event_name, event_date_time, description, _sport_id, _venue_id
-         	 FROM events ORDER BY event_date_time DESC LIMIT 10`
+func (m *SportEventModel) Latest() ([]EventHomeView, error) {
+	stmt := `
+        SELECT
+            e.event_id,
+            e.event_date_time,
+            v.venue_name,
+            s.sport_name, -- <-- 1. ADDED THE SPORT NAME TO THE SELECT
+            matchup.team1_name,
+            matchup.team1_score,
+            matchup.team2_name,
+            matchup.team2_score
+        FROM
+            events AS e
+        JOIN
+            venues AS v ON e._venue_id = v.venue_id
+        JOIN                                     -- <-- 2. ADDED THE JOIN TO THE SPORTS TABLE
+            sports AS s ON e._sport_id = s.sport_id
+        LEFT JOIN (
+            -- The subquery for teams remains exactly the same
+            SELECT
+                et1._event_id, t1.team_name AS team1_name, et1.score AS team1_score,
+                t2.team_name AS team2_name, et2.score AS team2_score
+            FROM
+                event_teams et1
+            JOIN event_teams et2 ON et1._event_id = et2._event_id AND et1._team_id < et2._team_id
+            JOIN teams t1 ON et1._team_id = t1.team_id
+            JOIN teams t2 ON et2._team_id = t2.team_id
+        ) AS matchup ON e.event_id = matchup._event_id
+        ORDER BY
+            e.event_date_time DESC
+        LIMIT 10`
+
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var sportEvents []SportEvent
+	var events []EventHomeView
 	for rows.Next() {
+		var ehv EventHomeView
 		var dateTimeString string
-		var e SportEvent
-		err = rows.Scan(&e.EventID, &e.EventName, &dateTimeString, &e.Description, &e.SportID, &e.VenueID)
+		var team1Name, team2Name sql.NullString
+		var team1Score, team2Score sql.NullInt64
+
+		err := rows.Scan(
+			&ehv.EventID,
+			&dateTimeString,
+			&ehv.VenueName,
+			&ehv.SportName, // <-- 3. ADDED THE SPORT NAME TO THE SCAN CALL (IN THE CORRECT POSITION)
+			&team1Name,
+			&team1Score,
+			&team2Name,
+			&team2Score,
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		// Use our robust helper function here as well.
+		ehv.Team1Name = team1Name.String
+		ehv.Team1Score = int(team1Score.Int64)
+		ehv.Team2Name = team2Name.String
+		ehv.Team2Score = int(team2Score.Int64)
+
 		parsedTime, err := parseFlexibleTime(dateTimeString)
 		if err != nil {
 			return nil, err
 		}
-		e.EventDateTime = parsedTime
-
-		sportEvents = append(sportEvents, e)
+		ehv.EventDateTime = parsedTime
+		events = append(events, ehv)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	return sportEvents, nil
+	return events, nil
 }
 
 func parseFlexibleTime(dateTimeString string) (time.Time, error) {
