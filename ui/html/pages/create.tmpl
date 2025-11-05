@@ -1,0 +1,44 @@
+{{define "title"}}Create a New Event{{end}}
+
+{{define "main"}}
+<form action='/event/create' method='POST' class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+    <h2 class="text-2xl font-bold text-slate-800 mb-6">Create New Sport Event</h2>
+
+    <!-- Form fields are wrapped in divs for styling and spacing -->
+    <div class="space-y-6">
+        <div>
+            <label for="eventName" class="block text-sm font-medium text-slate-700">Event Name</label>
+            <input type="text" name="eventName" id="eventName" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div>
+            <label for="description" class="block text-sm font-medium text-slate-700">Description</label>
+            <textarea name="description" id="description" rows="4" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+        </div>
+
+        <div>
+            <!-- For dates and times, 'datetime-local' is a useful input type -->
+            <label for="eventDateTime" class="block text-sm font-medium text-slate-700">Date and Time</label>
+            <input type="datetime-local" name="eventDateTime" id="eventDateTime" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <!-- NOTE: For SportID and VenueID, a real app would use a dropdown. -->
+        <!-- For now, we'll use simple text inputs as placeholders. -->
+        <div>
+            <label for="sportID" class="block text-sm font-medium text-slate-700">Sport ID (e.g., 1 for Basketball, 2 for Football)</label>
+            <input type="number" name="sportID" id="sportID" value="1" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div>
+            <label for="venueID" class="block text-sm font-medium text-slate-700">Venue ID (e.g., 101, 102)</label>
+            <input type="number" name="venueID" id="venueID" value="101" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        <div>
+            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Create Event
+            </button>
+        </div>
+    </div>
+</form>
+{{end}}

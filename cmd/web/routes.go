@@ -2,13 +2,13 @@ package main
 
 import "net/http"
 
-func routes() *http.ServeMux {
+func (app *application) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /{$}", home)
-	mux.HandleFunc("GET /event/view/{id}", sportEventView)
-	mux.HandleFunc("GET /event/create", sportEventCreate)
-	mux.HandleFunc("POST /event/create", sportEventCreatePost)
+	mux.HandleFunc("GET /{$}", app.home)
+	mux.HandleFunc("GET /event/view/{id}", app.sportEventView)
+	mux.HandleFunc("GET /event/create", app.sportEventCreate)
+	mux.HandleFunc("POST /event/create", app.sportEventCreatePost)
 
 	return mux
 }

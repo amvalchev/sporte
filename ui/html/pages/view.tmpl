@@ -1,0 +1,17 @@
+{{define "title"}}{{.Event.EventName}}{{end}}
+
+{{define "main"}}
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl mx-auto">
+        <!-- The event name is accessed via .Event.EventName -->
+        <h2 class="text-3xl font-bold text-slate-800 mb-2">{{.Event.EventName}}</h2>
+
+        <div class="text-md text-slate-500 mb-6">
+            <!-- Format the date and time -->
+            <strong>Date:</strong> {{.Event.EventDateTime.Format "Mon, 02 Jan 2006 at 3:04 PM"}}
+        </div>
+
+        <p class="text-slate-700 leading-relaxed">
+            {{.Event.Description}}
+        </p>
+    </div>
+{{end}}
