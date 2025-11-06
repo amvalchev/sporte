@@ -1,0 +1,31 @@
+How I've used AI for this project ?
+
+I've build the core of this project based on a book that I have and from which I am trying to learn how to build web applications with Go.
+Based on it I followed some of the base concepts to run the application more exactly:
+- The folder structure
+- The initializing of the server
+- The whole app logic where you need to have methods, handlers and models to execute the CRUD functionality
+- The templating
+- The dependancy injection where you build an application struct and use it on the handlers
+
+
+For the project I have used help from Gemini with the designing and creation of the database. SQL is something that I do not know, I have never before made ERD diagrams, I do not know how to write SQL queries or design databases, this is something that it is not covered in the sources that I have, so one of the mains helps was with this part of the task. I will also include my full conversation with the AI(erd.md), it helped me to learn more about how build the tables, fields, and the types. It also guided me how to make the ERD diagram and by following it to build the database in the tool that I used which is DB browser for sqlite.
+
+Another part I got help from it was with my errors I had some doubts If I am using correctly the whole if err != nil in Go, the whole error concept around how to build applications with Go is something that I don't quite get still. From there I have experienced some errors with the date time types and I went back and forth with the AI until I got it working, it rewrote my models to have a helper functions for the time I am not quite sure if its solution was the best that can be done. It also helped me to make some of the new methods and handlers by giving me the full sql statements and whenever possible it provided me the handlers like a blueprint and let me implement the logic in them since it was similar for the new ones that I have after the changes for the form.
+
+Maybe I should have followed the book but I don't think I would have the time to fully implement everything from it, since the book covers a lot of interesting subjects that were also not required for the task but would be nice to have them.
+
+The whole UI parts was also done with AI, I have a good understanding how I want to represent a data a feature for example and here AI helps a lot since I think it is pretty good at crafting UI. The UI itself it is not something special it looks generic but I think it displays the data in a nice way, again by going back and forth with the AI tool I got a decent result I think.
+
+
+Full disclosure I am fairly new in the programming world in terms of writing actual software, so there are a lot of concepts that I still don't have good understanding of, AI helps but also sometimes is confusing when it goes wild and starts to just throw code with solutions. Usually when I use it my prompt is always something in the lines of you goal is to be a tutor mentor and to help me understand the taught process and logic behind how to build a feature for example, not every time this works sometimes the tools don't quite keep the context, also I haven't included my other conversation for the project itself since it became too big and I don't have a way to export it form the Google AI studio I have to manually copy and paste every part of the conversation.
+
+There is more than one thing that could be improved UI is one of the parts a lot of additional data could be added to make the app more useful, the code itself I am not confident to say that this is the best way to do it I think there could be definitely parts that can be more clear and optimized.
+
+
+
+
+
+
+
+
