@@ -9,6 +9,7 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("GET /event/view/{id}", app.sportEventView)
 	mux.HandleFunc("GET /event/create", app.sportEventCreate)
 	mux.HandleFunc("POST /event/create", app.sportEventCreatePost)
+	mux.HandleFunc("POST /event/delete/{id}", app.sportEventDeletePost)
 
 	return mux
 }

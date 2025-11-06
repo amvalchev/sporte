@@ -3,15 +3,15 @@
 {{define "main"}}
     <div class="space-y-8">
 
-        <!-- The main matchup card -->
-        {{if ge (len .Teams) 2}}
+        <!-- UPDATED: The 'if' and 'index' calls now use .TeamsInEvent -->
+        {{if ge (len .TeamsInEvent) 2}}
             <div class="bg-white p-8 rounded-xl shadow-lg">
                 <div class="flex items-stretch gap-6">
 
-                    <!-- Column 1: Team 1 (No changes here) -->
+                    <!-- Column 1: Team 1 -->
                     <div class="flex-1">
-                        {{with (index .Teams 0)}}
-                            <!-- ... content for team 1 ... -->
+                        <!-- UPDATED: We get the first team from the .TeamsInEvent slice -->
+                        {{with (index .TeamsInEvent 0)}}
                             <div class="flex justify-between items-baseline border-b pb-3 mb-4">
                                 <h4 class="text-2xl font-bold text-slate-800">{{.Team.Name}}</h4>
                                 <span class="text-3xl font-black text-blue-600">{{.Score}}</span>
@@ -32,28 +32,18 @@
                         {{end}}
                     </div>
 
-                    <!-- Column 2: Event Details - THIS IS THE UPDATED SECTION -->
-                    <!--
-                        - It now has a background, padding, and rounded corners to stand out.
-                        - We use flexbox to center the content perfectly.
-                        - The Sport Name has been removed from here.
-                    -->
+                    <!-- Column 2: Event Details -->
                     <div class="flex-shrink-0 text-center bg-slate-100 rounded-lg p-6 flex flex-col justify-center">
                         <p class="text-5xl font-black text-red-400">VS</p>
-                        <p class="text-md text-slate-500 mt-4 font-semibold">
-
-                            {{.Event.EventDateTime.Format "Mon, 02 Jan 2006"}}
-                        </p>
-                         <p class="text-sm text-slate-400">
-                            {{.Event.EventDateTime.Format "3:04 PM"}}
-                        </p>
+                        <p class="text-md text-slate-500 mt-4 font-semibold">{{.Event.EventDateTime.Format "Mon, 02 Jan 2006"}}</p>
+                        <p class="text-sm text-slate-400">{{.Event.EventDateTime.Format "3:04 PM"}}</p>
                     </div>
 
-                    <!-- Column 3: Team 2 (No changes here) -->
+                    <!-- Column 3: Team 2 -->
                     <div class="flex-1">
-                        {{with (index .Teams 1)}}
-                            <!-- ... content for team 2 ... -->
-                            <div class="flex justify-between items-baseline border-b pb-3 mb-4">
+                        <!-- UPDATED: We get the second team from the .TeamsInEvent slice -->
+                        {{with (index .TeamsInEvent 1)}}
+                           <div class="flex justify-between items-baseline border-b pb-3 mb-4">
                                 <h4 class="text-2xl font-bold text-slate-800">{{.Team.Name}}</h4>
                                 <span class="text-3xl font-black text-blue-600">{{.Score}}</span>
                             </div>
@@ -72,34 +62,39 @@
                             </ul>
                         {{end}}
                     </div>
-
                 </div>
             </div>
         {{end}}
 
-        <!-- Bottom Details Card - THIS IS THE UPDATED SECTION -->
-        <!-- This card now contains all the contextual information grouped together. -->
+        <!-- Bottom Details Card -->
         <div class="bg-white p-6 rounded-xl shadow-lg">
             <h3 class="text-xl font-bold text-slate-700 mb-4">Details</h3>
-
-            <!-- Sport Info - MOVED HERE -->
             <div class="mb-4">
                 <p class="font-semibold text-blue-600">{{.Sport.Name}}</p>
                 <p class="text-slate-600 text-sm leading-relaxed">{{.Sport.Description}}</p>
             </div>
-
-            <!-- Event Description -->
             <div class="mb-4">
                 <p class="font-semibold">About the Event</p>
                 <p class="text-slate-600 text-sm leading-relaxed">{{.Event.Description}}</p>
             </div>
-
-            <!-- Venue Info -->
             <div>
                  <p class="font-semibold">Location</p>
                  <p class="text-slate-600 text-sm"><strong>{{.Venue.Name}}</strong> (Capacity: {{.Venue.Capacity}})</p>
                  <p class="text-slate-600 text-sm">{{.Venue.Address}}, {{.Venue.City}}, {{.Venue.Country}}</p>
             </div>
         </div>
+    </div>
+         <div class="bg-red-50 border border-red-200 p-6 rounded-xl shadow-lg">
+            <h3 class="text-xl font-bold text-red-800 mb-2">Danger Zone</h3>
+            <p class="text-red-700 mb-4">Deleting this event cannot be undone. All associated team and player data for this event will be permanently removed.</p>
+
+            <!-- This form will send the POST request to our delete handler -->
+            <form action="{{printf "/event/delete/%d" .Event.EventID}}" method="POST">
+                <button type="submit" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-200">
+                    Delete This Event
+                </button>
+            </form>
+        </div>
+
     </div>
 {{end}}
