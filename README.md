@@ -16,3 +16,4 @@ You have to have Go installed, you can download it from the official site for yo
 3. go mod download
 4. go mod tidy
 5. go run ./cmd/web
+6. visit - http://localhost:8000/

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -26,39 +27,67 @@ type templateData struct {
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-	// This handler is correct and does not need changes.
 	files := []string{
-		"./ui/html/base.tmpl", "./ui/html/partials/nav.tmpl", "./ui/html/pages/home.tmpl",
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/home.tmpl",
 	}
+
 	ts, err := template.ParseFiles(files...)
-	if err != nil { /* ... */
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
+
 	events, err := app.sportEvents.Latest()
-	if err != nil { /* ... */
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
+
 	data := templateData{HomeViewEvents: events}
 	err = ts.ExecuteTemplate(w, "base", data)
-	if err != nil { /* ... */
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
 func (app *application) sportEventView(w http.ResponseWriter, r *http.Request) {
+	// A bad ID in the URL is a client error, so we return a 404 Not Found.
 	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil || id < 1 { /* ... */
+	if err != nil || id < 1 {
+		http.NotFound(w, r)
+		return
 	}
 
 	event, sport, venue, teams, err := app.sportEvents.Get(id)
-	if err != nil { /* ... */
+	if err != nil {
+		// If the record specifically isn't found, that's also a 404.
+		if errors.Is(err, models.ErrNoRecord) {
+			http.NotFound(w, r)
+		} else {
+			// Any other database error is a server problem (500).
+			log.Print(err.Error())
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
 	}
 
 	files := []string{
-		"./ui/html/base.tmpl", "./ui/html/partials/nav.tmpl", "./ui/html/pages/view.tmpl",
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/view.tmpl",
 	}
 	ts, err := template.ParseFiles(files...)
-	if err != nil { /* ... */
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
-	// FIX #1: We now put the data into the correct field: 'TeamsInEvent'.
 	data := templateData{
 		Event:        event,
 		Sport:        sport,
@@ -67,7 +96,9 @@ func (app *application) sportEventView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = ts.ExecuteTemplate(w, "base", data)
-	if err != nil { /* ... */
+	if err != nil {
+		log.Print(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
@@ -125,7 +156,6 @@ func (app *application) sportEventCreate(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// FIX #2: The entire sportEventCreatePost handler is rewritten.
 func (app *application) sportEventCreatePost(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -133,58 +163,63 @@ func (app *application) sportEventCreatePost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Create the struct we need to pass to the Insert method.
-	data := models.InsertEventData{}
-
-	// Parse and convert all the form fields, handling errors for each.
-	data.EventName = r.PostForm.Get("eventName")
-	data.Description = r.PostForm.Get("description")
+	data := models.InsertEventData{
+		EventName:   r.PostForm.Get("eventName"),
+		Description: r.PostForm.Get("description"),
+	}
 
 	data.SportID, err = strconv.Atoi(r.PostForm.Get("sportID"))
 	if err != nil {
-		http.Error(w, "Invalid Sport ID", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Sport ID.", http.StatusBadRequest)
 		return
 	}
 
 	data.VenueID, err = strconv.Atoi(r.PostForm.Get("venueID"))
 	if err != nil {
-		http.Error(w, "Invalid Venue ID", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Venue ID.", http.StatusBadRequest)
 		return
 	}
 
 	data.Team1ID, err = strconv.Atoi(r.PostForm.Get("team1ID"))
 	if err != nil {
-		http.Error(w, "Invalid Team 1 ID", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Team 1 ID.", http.StatusBadRequest)
 		return
 	}
 
 	data.Team2ID, err = strconv.Atoi(r.PostForm.Get("team2ID"))
 	if err != nil {
-		http.Error(w, "Invalid Team 2 ID", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Team 2 ID.", http.StatusBadRequest)
 		return
 	}
 
 	data.Team1Score, err = strconv.Atoi(r.PostForm.Get("team1Score"))
 	if err != nil {
-		http.Error(w, "Invalid Team 1 Score", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Team 1 Score.", http.StatusBadRequest)
 		return
 	}
 
 	data.Team2Score, err = strconv.Atoi(r.PostForm.Get("team2Score"))
 	if err != nil {
-		http.Error(w, "Invalid Team 2 Score", http.StatusBadRequest)
+		http.Error(w, "Invalid value for Team 2 Score.", http.StatusBadRequest)
 		return
 	}
 
+	// Validation: Check if the same team was selected twice.
+	if data.Team1ID == data.Team2ID {
+		http.Error(w, "You cannot select the same team for both Team 1 and Team 2.", http.StatusBadRequest)
+		return
+	}
+
+	// Date/Time Parsing
 	eventDateTimeStr := r.PostForm.Get("eventDateTime")
 	layout := "2006-01-02T15:04"
 	data.EventDateTime, err = time.Parse(layout, eventDateTimeStr)
 	if err != nil {
-		http.Error(w, "Invalid Date Format", http.StatusBadRequest)
+		http.Error(w, "Invalid Date format. Please use the date picker.", http.StatusBadRequest)
 		return
 	}
 
-	// Now call the Insert method with the single 'data' struct.
+	// Database Insertion
 	id, err := app.sportEvents.Insert(data)
 	if err != nil {
 		log.Print(err.Error())
@@ -192,6 +227,7 @@ func (app *application) sportEventCreatePost(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Redirect on Success
 	redirectURL := fmt.Sprintf("/event/view/%d", id)
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
